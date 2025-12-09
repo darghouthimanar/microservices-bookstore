@@ -1,20 +1,8 @@
 #!/bin/bash
 set -e
+POD=$(kubectl get pods -l app=database -o jsonpath="{.items[0].metadata.name}")
 
-PGHOST=database
-PGUSER=bookstore_user
-PGPASSWORD=bookstore_password
-PGDATABASE=bookstore_db
-PGPORT=5432
-
-export PGPASSWORD
-
-echo "Attente du démarrage de Postgres..."
-until docker exec -it microservices-bookstore_database_1 pg_isready -U "$PGUSER" >/dev/null 2>&1; do
-  sleep 1
-done
-
-cat <<'SQL' | docker exec -i microservices-bookstore_database_1 psql -U $PGUSER -d $PGDATABASE
+kubectl exec -i $POD -- psql -U ${DB_USER:-bookstore_user} -d ${DB_NAME:-bookstore_db} <<'SQL'
 CREATE TABLE IF NOT EXISTS books (
   id SERIAL PRIMARY KEY,
   title VARCHAR(200) NOT NULL,
@@ -24,7 +12,6 @@ CREATE TABLE IF NOT EXISTS books (
   isbn VARCHAR(20) UNIQUE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
 CREATE TABLE IF NOT EXISTS orders (
   id SERIAL PRIMARY KEY,
   customer_name VARCHAR(100) NOT NULL,
@@ -44,6 +31,5 @@ INSERT INTO books (title, author, price, stock, isbn) VALUES
 ('The Pragmatic Programmer','Hunt & Thomas',32.99,12,'978-0135957059')
 ON CONFLICT DO NOTHING;
 SQL
-
-echo "Seed terminé."
+echo "Seed done"
 

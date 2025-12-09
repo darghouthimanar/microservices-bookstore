@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: book-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: book-service
+  template:
+    metadata:
+      labels:
+        app: book-service
+    spec:
+      containers:
+        - name: book
+          image: yourrepo/book-service:latest
+          ports:
+            - containerPort: 5001
+          envFrom:
+            - configMapRef:
+                name: bookstore-config
+            - secretRef:
+                name: bookstore-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: book-service
+spec:
+  selector:
+    app: book-service
+  ports:
+    - port: 5001
+      targetPort: 5001
+  type: ClusterIP
+
